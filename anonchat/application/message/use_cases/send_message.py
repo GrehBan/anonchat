@@ -7,6 +7,7 @@ from anonchat.domain.message import mapping
 from anonchat.domain.chat.exceptions import ChatNotFoundException, ChatClosedException
 from anonchat.domain.base.exceptions import PermissionDeniedException
 
+
 class ISendMessage(Protocol):
     uow: IChatUoW
 

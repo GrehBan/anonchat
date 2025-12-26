@@ -5,7 +5,7 @@ from anonchat.domain.chat.aggregate import PrivateChat
 
 
 class IChatRepo(IRepo, Protocol):
-    async def add(self, chat: PrivateChat) -> int:
+    async def add(self, chat: PrivateChat) -> PrivateChat:
         ...
     
     async def get_by_id(self, chat_id: int) -> PrivateChat | None:

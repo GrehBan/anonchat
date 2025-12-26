@@ -14,9 +14,18 @@ def map_chat_model_to_entity(model: PrivateChatModel) -> PrivateChat:
 
 def map_chat_entity_to_model_kwargs(entity: PrivateChat) -> dict:
     return {
-        "chat_id": entity.id if entity.id else None,
+        "chat_id": entity.id,
         "user1_id": entity.user1_id,
         "user2_id": entity.user2_id,
         "is_active": entity.is_active,
         "created_at": entity.created_at
     }
+
+def map_chat_entity_to_model(entity: PrivateChat) -> PrivateChatModel:
+    return PrivateChatModel(
+        chat_id=entity.id,
+        user1_id=entity.user1_id,
+        user2_id=entity.user2_id,
+        is_active=entity.is_active,
+        created_at=entity.created_at
+    )

@@ -29,6 +29,9 @@ class Reputation(IValueObject["Reputation"]):
         return self.likes - self.dislikes
     
     def update(self, reputation: UserReputation, change: ReputationChange, value: int) -> Reputation:
+        if value < 0:
+            raise ValueError("Reputation value must be non-negative")
+
         sign = 1 if change == ReputationChange.INCREASE else -1
         delta = value * sign
 

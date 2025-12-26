@@ -5,7 +5,7 @@ from anonchat.domain.message.aggregate import Message
 
 
 class IMessageRepo(IRepo, Protocol):
-    async def add(self, message: Message) -> int:
+    async def add(self, message: Message) -> Message:
         ...
     
     async def get_by_id(self, message_id: int) -> Message | None:

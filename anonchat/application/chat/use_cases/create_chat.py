@@ -46,10 +46,10 @@ class StartChat(IStartChat):
                 user2_id=user2.id
             )
 
-            if chat.id == 0:
-                chat.id = await self.uow.repo.add(chat)
-                await self.uow.commit()
-
+            computed = await self.uow.repo.add(chat)
+            await self.uow.commit()
+            chat.id = computed.id
+            
             return mapping.chat_to_dto(
                 chat,
                 user_mapping.user_to_profile_dto(user1),

@@ -35,6 +35,6 @@ class GetCurrentChat(IGetCurrentChat):
 
             return mapping.chat_to_dto(
                 chat,
-                user1_dto=user1,
-                user2_dto=user2
+                user1_dto=user_mapping.user_to_profile_dto(user1),
+                user2_dto=user_mapping.user_to_profile_dto(user2)
             )
