@@ -5,9 +5,9 @@ from anonchat.domain.base.aggregate import IAggregateRoot
 from anonchat.domain.message.value_object import MessageContent, MediaAttachment
 
 
-@dataclass
+@dataclass(eq=False)
 class Message(IAggregateRoot):
-    message_id: int
+    id: int
     chat_id: int
     sender_id: int
     content: MessageContent

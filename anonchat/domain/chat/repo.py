@@ -14,7 +14,7 @@ class IChatRepo(IRepo, Protocol):
     async def get_chat_between(self, user_id_1: int, user_id_2: int) -> PrivateChat | None:
         ...
         
-    async def get_active_chat_for_user(self, user_id: int) -> list[PrivateChat]:
+    async def get_active_chat_for_user(self, user_id: int) -> PrivateChat:
         ...
     
     async def delete_chat(self, chat_id: int) -> None:

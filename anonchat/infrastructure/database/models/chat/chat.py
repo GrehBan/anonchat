@@ -19,5 +19,5 @@ class PrivateChatModel(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
-    user1: Mapped["UserModel"] = relationship("UserModel", foreign_keys=[user1_id], lazy="selectin")
-    user2: Mapped["UserModel"] = relationship("UserModel", foreign_keys=[user2_id], lazy="selectin")
+    user1: Mapped["UserModel"] = relationship("UserModel", foreign_keys=[user1_id])
+    user2: Mapped["UserModel"] = relationship("UserModel", foreign_keys=[user2_id])

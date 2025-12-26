@@ -23,7 +23,7 @@ class SendMessage(ISendMessage):
             if not chat:
                 raise ValueError(f"Chat {chat_id} not found")
             
-            if sender_id not in (chat.user1.id, chat.user2.id):
+            if sender_id not in (chat.user1_id, chat.user2_id):
                  raise PermissionError("User is not a participant of this chat")
             
             if not chat.is_active:
@@ -32,14 +32,14 @@ class SendMessage(ISendMessage):
             content_vo = mapping.dto_to_message_content(dto)
 
             new_message = Message(
-                message_id=0,
+                id=0,
                 chat_id=chat_id,
                 sender_id=sender_id,
                 content=content_vo
             )
 
             new_msg_id = await self.uow.message_repo.add(new_message)
-            new_message.message_id = new_msg_id
+            new_message.id = new_msg_id
 
             await self.uow.commit()
             

@@ -1,12 +1,15 @@
 from anonchat.domain.chat.aggregate import PrivateChat
 from anonchat.domain.chat.dto import PrivateChatDTO
+from anonchat.domain.user.dto import UserProfileDTO
 
-from anonchat.domain.user.mapping import user_to_profile_dto
 
-
-def chat_to_dto(chat: PrivateChat) -> PrivateChatDTO:
+def chat_to_dto(
+    chat: PrivateChat, 
+    user1_dto: UserProfileDTO, 
+    user2_dto: UserProfileDTO
+) -> PrivateChatDTO:
     return PrivateChatDTO(
         id=chat.id,
-        user1=user_to_profile_dto(chat.user1),
-        user2=user_to_profile_dto(chat.user2),
+        user1=user1_dto,
+        user2=user2_dto,
     )
