@@ -1,6 +1,4 @@
-Here is the `README.md` for the current version of the project in English.
 
----
 
 # Anochat
 
