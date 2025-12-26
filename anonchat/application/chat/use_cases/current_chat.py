@@ -29,10 +29,12 @@ class GetCurrentChat(IGetCurrentChat):
             user_companion = await self.uow.user_repo.get_by_id(companion_id)
             
             if not user_me or not user_companion:
-                return None 
+                return None
+            user1 = user_me if chat.user1_id == user_id else user_companion
+            user2 = user_companion if chat.user2_id == companion_id else user_me
 
             return mapping.chat_to_dto(
                 chat,
-                user1_dto=user_mapping.user_to_profile_dto(user_me if chat.user1_id == user_me.id else user_companion),
-                user2_dto=user_mapping.user_to_profile_dto(user_companion if chat.user2_id == user_companion.id else user_me)
+                user1_dto=user1,
+                user2_dto=user2
             )

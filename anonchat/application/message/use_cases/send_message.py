@@ -4,7 +4,8 @@ from anonchat.domain.chat.uow import IChatUoW
 from anonchat.domain.message.dto import SendMessageDTO, MessageDTO
 from anonchat.domain.message.aggregate import Message
 from anonchat.domain.message import mapping
-
+from anonchat.domain.chat.exceptions import ChatNotFoundException, ChatClosedException
+from anonchat.domain.base.exceptions import PermissionDeniedException
 
 class ISendMessage(Protocol):
     uow: IChatUoW
@@ -21,13 +22,13 @@ class SendMessage(ISendMessage):
         async with self.uow:
             chat = await self.uow.repo.get_by_id(chat_id)
             if not chat:
-                raise ValueError(f"Chat {chat_id} not found")
+                raise ChatNotFoundException(f"Chat {chat_id} not found")
             
             if sender_id not in (chat.user1_id, chat.user2_id):
-                 raise PermissionError("User is not a participant of this chat")
+                 raise PermissionDeniedException("User is not a participant of this chat")
             
             if not chat.is_active:
-                raise ValueError("Chat is closed")
+                raise ChatClosedException("Chat is closed")
 
             content_vo = mapping.dto_to_message_content(dto)
 

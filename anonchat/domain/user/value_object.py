@@ -85,7 +85,7 @@ class Status(IValueObject["Status"]):
 class Interests(IValueObject["Interests"]):
     user_interests: set[int] = field(default_factory=set)
 
-    def update(self, *interests: int) -> None:
+    def update(self, *interests: int) -> "Interests":
         interests_copy = self.user_interests.copy()
         interests_copy.update(interests)
         return Interests(

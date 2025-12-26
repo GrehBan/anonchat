@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 
 from anonchat.domain.base.aggregate import IAggregateRoot
 
@@ -10,7 +10,7 @@ class PrivateChat(IAggregateRoot):
     user1_id: int
     user2_id: int
     is_active: bool = True
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def get_companion_id(self, my_id: int) -> int:
         if self.user1_id == my_id:

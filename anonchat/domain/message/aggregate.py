@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 
 from anonchat.domain.base.aggregate import IAggregateRoot
 from anonchat.domain.message.value_object import MessageContent, MediaAttachment
@@ -11,7 +11,7 @@ class Message(IAggregateRoot):
     chat_id: int
     sender_id: int
     content: MessageContent
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def edit_text(self, new_text: str) -> None:
         if not self.content.text:

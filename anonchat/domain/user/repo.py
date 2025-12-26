@@ -8,7 +8,7 @@ class IUserRepo(IRepo, Protocol):
     async def add(self, user: User) -> None:
         ...
     
-    async def get_by_id(self, id: int) -> User:
+    async def get_by_id(self, id: int) -> User | None:
         ...
     
     async def delete_by_id(self, id: int) -> None:

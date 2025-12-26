@@ -5,6 +5,8 @@ from anonchat.domain.chat.dto import StartChatRequestDTO, PrivateChatDTO
 from anonchat.domain.chat.aggregate import PrivateChat
 from anonchat.domain.chat import mapping
 from anonchat.domain.user import mapping as user_mapping
+from anonchat.domain.chat.exceptions import ChatClosedException, ChatNotFoundException, PermissionDeniedException
+from anonchat.domain.user.exceptions import UserAlreadyInChatException, UserIsBusyException, UserNotFoundException, UserIsSelfException
 
 
 class IStartChat(Protocol):
@@ -21,30 +23,28 @@ class StartChat(IStartChat):
         target_id = dto.user2_id
         
         if initiator_id == target_id:
-            raise ValueError("Cannot start chat with yourself")
+            raise UserIsSelfException("Cannot start chat with yourself")
 
         async with self.uow:
-            chat = await self.uow.repo.get_active_chat_for_user(initiator_id)
-
-            if chat:
-                if target_id not in (chat.user1_id, chat.user2_id):
-                    raise ValueError("You already have an active chat")
-            else:
-                if await self.uow.repo.get_active_chat_for_user(target_id):
-                    raise ValueError("User is busy")
-
-                chat = PrivateChat(
-                    id=0,
-                    user1_id=initiator_id,
-                    user2_id=target_id,
-                    is_active=True
-                )
+            initiator_chat = await self.uow.repo.get_active_chat_for_user(initiator_id)
+            if initiator_chat:
+                raise UserAlreadyInChatException("You already have an active chat")
+            
+            target_chat = await self.uow.repo.get_active_chat_for_user(target_id)
+            if target_chat:
+                raise UserIsBusyException("Target user is busy")
 
             user1 = await self.uow.user_repo.get_by_id(initiator_id)
             user2 = await self.uow.user_repo.get_by_id(target_id)
 
             if not user1 or not user2:
-                raise ValueError("Users not found")
+                raise UserNotFoundException("Users not found")
+            
+            chat = PrivateChat(
+                id=0,
+                user1_id=user1.id,
+                user2_id=user2.id
+            )
 
             if chat.id == 0:
                 chat.id = await self.uow.repo.add(chat)

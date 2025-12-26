@@ -1,7 +1,9 @@
 from typing import Protocol
+
 from anonchat.domain.user.uow import IUserUoW
 from anonchat.domain.user.dto import UserProfileDTO
 from anonchat.domain.user import mapping
+from anonchat.domain.user.exceptions import UserNotFoundException
 
 
 class IGetUser(Protocol):
@@ -20,6 +22,6 @@ class GetUser(IGetUser):
             user = await self.uow.repo.get_by_id(user_id)
             
             if not user:
-                raise ValueError(f"User with id {user_id} not found")
+                raise UserNotFoundException(f"User with id {user_id} not found")
             
             return mapping.user_to_profile_dto(user)

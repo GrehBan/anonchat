@@ -4,7 +4,7 @@ from anonchat.domain.message.aggregate import Message
 
 
 def message_to_dto(message: Message) -> MessageDTO:
-    media_list = [m.file_id for m in message.content.media] if message.content.has_media else None
+    media_list = [m.file_id for m in message.content.media] if message.content.has_media else []
 
     return MessageDTO(
         id=message.id,  # Fixed
