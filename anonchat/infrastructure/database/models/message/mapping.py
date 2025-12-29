@@ -20,15 +20,14 @@ def map_message_model_to_entity(model: MessageModel) -> Message:
     )
 
 
-def map_message_entity_to_model_kwargs(entity: Message) -> dict:
+def map_message_entity_to_model(entity: Message) -> MessageModel:
     text_val = entity.content.text.value if entity.content.text else None
     media_val = [m.file_id for m in entity.content.media]
 
-    return {
-        "message_id": entity.id if entity.id else None,
-        "chat_id": entity.chat_id,
-        "sender_id": entity.sender_id,
-        "content_text": text_val,
-        "content_media": media_val,
-        "created_at": entity.created_at
-    }
+    return MessageModel(
+        chat_id=entity.chat_id,
+        sender_id=entity.sender_id,
+        content_text=text_val,
+        content_media=media_val,
+        created_at=entity.created_at
+    )

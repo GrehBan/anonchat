@@ -40,8 +40,7 @@ class SendMessage(ISendMessage):
                 content=content_vo
             )
 
-            new_msg_id = await self.uow.message_repo.add(new_message)
-            new_message.id = new_msg_id
+            new_message = await self.uow.message_repo.add(new_message)
 
             await self.uow.commit()
             

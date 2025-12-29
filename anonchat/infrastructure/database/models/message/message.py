@@ -11,7 +11,7 @@ from anonchat.infrastructure.database.models.base import Base
 class MessageModel(Base):
     __tablename__ = "messages"
 
-    message_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    message_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
     
     chat_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("private_chats.chat_id", ondelete="CASCADE"), nullable=False)
     sender_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)

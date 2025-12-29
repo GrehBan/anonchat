@@ -1,7 +1,3 @@
-Here is the `README.md` for the current version of the project in English.
-
----
-
 # Anochat
 
 **Anochat** is a core for an anonymous chat bot (chat-roulette) built upon **Clean Architecture** and **Domain-Driven Design (DDD)** principles. The project focuses on strict typing, separation of concerns, and performance.

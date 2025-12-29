@@ -1,10 +1,9 @@
 from typing import Protocol, TypeVar, Self
 
-from anonchat.domain.base.repo import RepoT
+from anonchat.domain.base.lock import ILockFactory
 
 
 class IUoW(Protocol):
-    repo: RepoT
     
     async def commit(self) -> None:
         ...
@@ -17,5 +16,12 @@ class IUoW(Protocol):
 
     async def __aexit__(self, exc_type, exc_value, traceback) -> None:
         ...
+    
+    async def close(self) -> None:
+        ...
+
+class ILockUoW(IUoW, Protocol):
+    lock: ILockFactory
+
 
 UoWT = TypeVar("UoWT", bound="IUoW")

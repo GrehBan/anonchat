@@ -88,12 +88,19 @@ class Status(IValueObject["Status"]):
 class Interests(IValueObject["Interests"]):
     user_interests: set[int] = field(default_factory=set)
 
-    def update(self, *interests: int) -> "Interests":
-        interests_copy = self.user_interests.copy()
-        interests_copy.update(interests)
-        return Interests(
-            user_interests=interests_copy
-        )
+    def add_interests(self, *interests: int) -> "Interests":
+        if not interests:
+            return self
+        
+        new_interests = self.user_interests | set(interests)
+        return Interests(user_interests=new_interests)
+
+    def remove_interests(self, *interests: int) -> "Interests":
+        if not interests:
+            return self
+        
+        new_interests = self.user_interests - set(interests)
+        return Interests(user_interests=new_interests)
 
     def matches(self, *interests: int, strict: bool = True) -> bool:
         if not interests:

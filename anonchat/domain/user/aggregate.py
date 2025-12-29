@@ -28,6 +28,9 @@ class User(IAggregateRoot):
     @property
     def is_owner(self) -> bool:
         return self.status.is_owner
+
+    def update_interests(self, *interests: int) -> None:
+        self.interests = self.interests.add_interests(*interests)
     
     def interested_in(self, *interests: int, strict: bool = True) -> bool:
         return self.interests.matches(

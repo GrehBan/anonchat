@@ -1,19 +1,19 @@
 from typing import Protocol
 
-from anonchat.domain.chat.uow import IChatUoW
+from anonchat.domain.chat.uow import ILockChatUoW
 from anonchat.domain.chat.dto import PrivateChatDTO
 from anonchat.domain.chat import mapping
 from anonchat.domain.user import mapping as user_mapping
 
 
 class IGetCurrentChat(Protocol):
-    uow: IChatUoW
+    uow: ILockChatUoW
     async def execute(self, user_id: int) -> PrivateChatDTO | None:
         ...
 
 
 class GetCurrentChat(IGetCurrentChat):
-    def __init__(self, uow: IChatUoW):
+    def __init__(self, uow: ILockChatUoW):
         self.uow = uow
     
     async def execute(self, user_id: int) -> PrivateChatDTO | None:

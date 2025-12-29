@@ -24,8 +24,9 @@ class UpdateUser(IUpdateUser):
             if not user:
                 raise UserNotFoundException(f"User with id {dto.id} not found")
             
-            mapping.update_user_from_dto(dto, user)
+            user = mapping.update_user_from_dto(dto, user)
 
+            await self.uow.repo.add(user)
             await self.uow.commit()
             
             return mapping.user_to_profile_dto(user)
