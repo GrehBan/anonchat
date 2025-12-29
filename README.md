@@ -1,90 +1,101 @@
-# Anochat
+# Anochat Core (High-Load Edition)
 
-**Anochat** is a core for an anonymous chat bot (chat-roulette) built upon **Clean Architecture** and **Domain-Driven Design (DDD)** principles. The project focuses on strict typing, separation of concerns, and performance.
+**Anochat** is a high-performance core for an anonymous chat bot (chat-roulette), built on the principles of **Clean Architecture**, **Domain-Driven Design (DDD)**, and **Event Sourcing (Lite)**.
+
+The architecture is designed to handle high loads: all read and write operations occur in memory (Redis), while persistence to PostgreSQL happens asynchronously via event streams (Redis Streams).
+
+## ⚡ Architecture Features
+
+### 1. Redis First & Write-Behind
+
+Unlike traditional bots, Anochat does not write synchronously to the database.
+
+* **Hot Storage:** Active chats and recent messages are stored in Redis. This ensures instant response times (`< 5ms`).
+* **Reliability:** Data is reliably saved to PostgreSQL using the **Write-Behind** pattern. Repositories emit events (`CREATE`, `SAVE`, `CLOSE`) to Redis Streams.
+* **Optimization:** Message history uses the **"Timeline + Payload"** pattern with `MGET` to minimize network latency.
+
+### 2. Concurrency Control
+
+A strict distributed locking system is implemented on top of Redis.
+
+* Guarantees dialog uniqueness (a user cannot be in two chats simultaneously).
+* Prevents Race Conditions during simultaneous chat creation requests by locking users in a sorted order.
+
+### 3. Clean Architecture
+
+* **Domain:** Pure business logic (Aggregates, Value Objects, Protocols).
+* **Application:** Use Cases that manage data flow and transactions.
+* **Infrastructure:** Repository implementations based on `redis-py` and `sqlalchemy` (async).
 
 ## 🛠 Tech Stack
 
 * **Language:** Python 3.14+
-* **Web Framework / Bot:** aiogram 3.x
-* **Database:** PostgreSQL + asyncpg
+* **In-Memory DB:** Redis 7+ (Storage, Streams, Locks)
+* **Persistent DB:** PostgreSQL 16+ (Archive)
 * **ORM:** SQLAlchemy 2.0 (Async)
-* **Validation:** Pydantic V2
-* **Mapping:** manual mappers.
+* **Framework:** Aiogram 3.x
+* **Utils:** Pydantic V2, AsyncPG, Adaptix
 
-## 🏗 Architecture
+## 📂 Project Structure
 
-The project follows a layered architecture:
+```text
+anonchat/
+├── application/      # Use Cases (Business Scenarios)
+│   ├── chat/         # Chat logic (StartChat, GetCurrentChat)
+│   ├── message/      # Message logic (SendMessage)
+│   └── user/         # User management
+├── domain/           # Pure Business Logic (Entities, VOs, Interfaces)
+└── infrastructure/   # Data Access Implementation
+    ├── cache/        # Redis Key Generators, Locks
+    ├── repositories/ # Repositories (Redis implementation)
+    └── database/     # SQLAlchemy Models
 
-1. **Domain Layer**: Contains pure business logic.
-* **Aggregates**: `User`, `PrivateChat`, `Message`.
-* **Value Objects**: `Reputation`, `Interests`, `MessageContent` (text + media).
-* **Protocols (Interfaces)**: Repositories (`IUserRepo`, `IChatRepo`) and UoW (`IChatUoW`).
+```
 
-
-2. **Application Layer (Use Cases)**: Scenarios that orchestrate the domain logic.
-* `StartChat` (creates a unique 1:1 dialog).
-* `SendMessage` (validation and sending).
-* User Management (`Create`, `Get`, `Update`, `Delete`).
-
-
-3. **Infrastructure Layer**: Database implementation.
-* SQLAlchemy Models (`UserModel`, `PrivateChatModel`, `MessageModel`).
-* Mappers (`Model` <-> `Entity`).
-
-
-
-## ✨ Current Features
-
-* **Users:**
-* Registration and profiling (gender, age, interests).
-* Reputation system (likes/dislikes).
-* Search settings.
-
-
-* **1-on-1 Chats:**
-* Strict "one active dialog per user" logic.
-* Lightweight chat aggregates (store only IDs for performance).
-
-
-* **Messages:**
-* Text messages support (up to 4096 chars).
-* Media attachments support (photos/videos).
-
-
-
-## 🚀 Installation & Run
+## 🚀 Installation & Setup
 
 1. **Clone the repository:**
 ```bash
 git clone https://github.com/your-username/anochat.git
+cd anochat
 
 ```
 
 
-2. **Install dependencies (using Poetry):**
+2. **Environment Configuration:**
+Create a `.env` file in the root directory:
+```env
+REDIS_URL=redis://localhost:6379/0
+DATABASE_URL=postgresql+asyncpg://user:pass@localhost/anochat
+BOT_TOKEN=your_token_here
+
+```
+
+
+3. **Install Dependencies:**
 ```bash
 poetry install
 
 ```
 
 
-3. **Environment Setup:**
-Create a `.env` file and specify your database connection parameters and bot token.
-4. **Run (example):**
+4. **Run:**
 ```bash
+# Example command to run the bot
 poetry run python -m anonchat.main
 
 ```
 
 
 
-## ✅ TODO (Roadmap)
+## ✅ Roadmap
 
-Based on the current analysis of the codebase, the following components need implementation:
+Based on the current codebase analysis:
 
-* [ ] **Implement `GetCurrentChat` Use Case**: Required to strictly check user status ("busy/free") before starting a new chat.
-* [ ] **Implement `GetChatHistory` Use Case**: The repository interface `IMessageRepo` already has `get_by_chat_id` methods, but the use case itself is missing.
-* [ ] **Close Chat Logic**: Implement a Use Case for the `PrivateChat.close_chat()` method.
-* [ ] **Presentation Layer (Bot Handlers)**: Write `aiogram` handlers that will invoke the implemented Use Cases.
-* [ ] **Database Migrations**: Set up `alembic` to create tables based on SQLAlchemy models.
-* [ ] **Redis**: Connect Redis for storing temporary FSM states (listed in dependencies, but not yet used in the code).
+* [x] **Core Domain**: Chat, User, and Message aggregates are implemented.
+* [x] **Redis Repositories**: Repositories supporting Streams and Pipelines are ready.
+* [x] **Locking Mechanism**: Protection against Race Conditions is implemented.
+* [x] **Use Cases**: Main scenarios (`StartChat`, `SendMessage`) are implemented.
+* [ ] **Workers**: Implementation of background consumers to move data from Redis Streams to PostgreSQL.
+* [ ] **Admin Panel**: Administration interface for statistics and ban management.
+* [ ] **Metrics**: Integration with Prometheus/Grafana.
