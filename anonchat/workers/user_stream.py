@@ -59,17 +59,25 @@ class UserStreamWorker(RedisWorker):
 
         async with self._session_maker() as session:
             repo = SqlalchemyUserRepo(session)
-            if data["type"] in ("SAVE", "UPDATE",):
-                user_data = self._load(data["raw"])
+
+            data_type = self._get_data_and_decode(data, "type")
+
+            if data_type in ("SAVE", "UPDATE",):
+
+                raw = self._get_data_and_decode(data, "raw")
+                user_data = self._load(raw)
+                
                 if user_data is None:
                     return
                 user = mapping.map_redis_data_to_user_entity(user_data)
-                if data["type"] == "UPDATE":
+
+                if data_type == "UPDATE":
                     await repo.update(user)
                 else:
                     await repo.add(user)
 
-            elif data["type"] == "DELETE":
-                await repo.delete_by_id(int(data["id"]))
+            elif data_type == "DELETE":
+                _id = self._get_data_and_decode(data, "id")
+                await repo.delete_by_id(int(_id))
             
             await session.commit()

@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 
 from redis.asyncio import Redis
@@ -55,21 +54,27 @@ class MessageStreamWorker(RedisWorker):
             except Exception as e:
                 logger.error(f"Consumer error: {e}", exc_info=True)
                 await asyncio.sleep(1)
-                
+
     async def process_event(self, data: dict):
 
         async with self._session_maker() as session:
             repo = SqlalchemyMessageRepo(session)
 
-            if data["type"] == "SAVE":
-                message_data = self._load(data["raw"])
+            data_type = self._get_data_and_decode(data, "type")
+
+            if data_type == "SAVE":
+
+                raw = self._get_data_and_decode(data, "raw")
+                message_data = self._load(raw)
+                
                 if message_data is None:
                     return
                 message = mapping.map_redis_data_to_message_entity(message_data)
                 await repo.add(message)
 
-            elif data["type"] == "DELETE":
-                await repo.delete(int(data["id"]))
+            elif data_type == "DELETE":
+                _id = self._get_data_and_decode("id")
+                await repo.delete(int(_id))
 
             await session.commit()
 

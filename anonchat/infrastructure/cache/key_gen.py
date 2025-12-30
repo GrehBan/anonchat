@@ -35,7 +35,7 @@ def get_user_shard(shard_id: int) -> str:
     return f"{NAMESPACE}:stream:users:{shard_id}"
 
 def get_user_shard_group(shard_id: int) -> str:
-    return f"db-sync-users-shard-{shard_id}"
+    return f"{NAMESPACE}:db-sync-users-shard-{shard_id}"
 
 def get_chat_stream(chat_id: int) -> str:
     shard_id = chat_id % SHARDS_COUNT
@@ -45,7 +45,7 @@ def get_chat_shard(shard_id: int) -> str:
     return f"{NAMESPACE}:stream:chats:{shard_id}"
 
 def get_chat_shard_group(shard_id: int) -> str:
-    return f"db-sync-chats-shard-{shard_id}"
+    return f"{NAMESPACE}:db-sync-chats-shard-{shard_id}"
 
 
 def get_message_stream(message_id: int) -> str:
@@ -56,4 +56,4 @@ def get_message_shard(shard_id: int) -> str:
     return f"{NAMESPACE}:stream:messages:{shard_id}"
 
 def get_message_shard_group(shard_id: int) -> str:
-    return f"db-sync-messages-shard-{shard_id}"
+    return f"{NAMESPACE}:db-sync-messages-shard-{shard_id}"

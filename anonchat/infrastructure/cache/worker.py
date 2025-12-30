@@ -2,6 +2,7 @@ import logging
 import asyncio
 import json
 
+from typing import Any
 from datetime import datetime, timezone
 
 from redis.asyncio import Redis
@@ -99,3 +100,9 @@ class RedisWorker(IWokrker):
             pass
 
         return None
+
+    def _get_data_and_decode(data: dict, key: str) -> Any:
+        value = data.get(key.encode())
+        if value is None:
+            value = data.get(key)
+        return value.decode() if isinstance(value, bytes) else value

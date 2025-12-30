@@ -31,7 +31,7 @@ class RedisChatRepo(RedisRepo, IChatRepo):
             pipe.set(key_gen.user_active_chat(chat.user1_id), chat_id, ex=self._ttl)
             pipe.set(key_gen.user_active_chat(chat.user2_id), chat_id, ex=self._ttl)
             
-            pipe.xadd(stream_key, {"type": "CREATE", "data": raw})
+            pipe.xadd(stream_key, {"type": "CREATE", "raw": raw})
             
             await pipe.execute()
             

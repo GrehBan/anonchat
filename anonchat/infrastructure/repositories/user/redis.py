@@ -35,7 +35,7 @@ class RedisUserRepo(RedisRepo, IUserRepo):
         async with self.redis.pipeline() as pipe:
             pipe.set(key, raw, ex=self._ttl)
             
-            pipe.xadd(key_gen.get_user_stream(user.id), {"type": event_type, "data": raw})
+            pipe.xadd(key_gen.get_user_stream(user.id), {"type": event_type, "raw": raw})
             
             await pipe.execute()
 

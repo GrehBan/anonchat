@@ -61,18 +61,27 @@ class ChatStreamWorker(RedisWorker):
         async with self._session_maker() as session:
             repo = SqlalchemyChatRepo(session)
 
-            if data["type"] == "CREATE":
-                chat_data = self._load(data["raw"])
+            data_type = self._get_data_and_decode(data, "type")
+
+            if data_type == "CREATE":
+
+                raw = self._get_data_and_decode(data, "raw")
+                chat_data = self._load(raw)
+
                 if chat_data is None:
                     return
+                
                 chat = mapping.map_redis_data_to_chat_entity(chat_data)
                 await repo.add(chat)
 
-            elif data["type"] == "CLOSE":
-                chat = await self.repo.get_by_id(chat_id=int(data["id"]))
+            elif data_type == "CLOSE":
+
+                _id = self._get_data_and_decode(data, "id")
+                chat = await repo.get_by_id(chat_id=int(_id))
+                
                 if chat is not None:
                     chat.is_active = False
                     await repo.update(chat)
-            
+
             await session.commit()
 

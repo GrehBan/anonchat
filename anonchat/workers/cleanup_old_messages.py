@@ -35,8 +35,10 @@ class CleanupMessagesWorker(RedisWorker):
                     
                     if cursor == 0:
                         break
-                
-                await asyncio.sleep(60)
+                    
+                    await asyncio.sleep(.01)
+                if cursor == 0:
+                    await asyncio.sleep(60)
             
             except Exception as e:
                 logger.error(f"Cleanup worker error: {e}", exc_info=True)
