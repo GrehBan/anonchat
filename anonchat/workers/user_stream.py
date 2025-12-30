@@ -4,34 +4,42 @@ import logging
 
 from redis.asyncio import Redis
 from redis import exceptions
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import sessionmaker
 
-from anonchat.domain.user.repo import IUserRepo
 from anonchat.infrastructure.cache.worker import RedisWorker
 from anonchat.infrastructure.cache import key_gen
 from anonchat.infrastructure.repositories.user import mapping
+from anonchat.infrastructure.repositories.user.sqlalchemy import SqlalchemyUserRepo
 
 logger = logging.getLogger(__name__)
 
 
 class UserStreamWorker(RedisWorker):
-    def __init__(self, redis: Redis, repo: IUserRepo) -> None:
-        super().__init__(redis, group_name="user-group")
+    def __init__(self, redis: Redis, session_maker: sessionmaker[AsyncSession], shard_id: int) -> None:
+        stream_key = key_gen.get_user_shard(shard_id)
+        group_name = key_gen.get_user_shard_group(shard_id)
+        super().__init__(redis, group_name=group_name, stream_key=stream_key, shard_id=shard_id)
 
-        self.repo = repo
+        self._session_maker = session_maker
 
     async def consume(self) -> None:
         await self.ensure_consumer_group(
-            key_gen.STREAM_USERS,
+            self._stream_key,
         )
         self._running = True
-        logger.info(f"{self.__class__.__name__} Started")
+        logger.info(
+            f"Worker {self.__class__.__name__} "
+            f"SHARD-{self._shard_id}-{self._id} "
+            f"started. Listening: {self._stream_key}"
+        )
 
         while self._running:
             try:
                 events = await self.redis.xreadgroup(
                     groupname=self._group_name,
-                    consumername=f"worker-{self._id}",
-                    streams={key_gen.STREAM_USERS: ">"},
+                    consumername=f"worker-shard-{self._shard_id}-{self._id}",
+                    streams={self._stream_key: ">"},
                     count=100,
                     block=1000
                 )
@@ -48,13 +56,20 @@ class UserStreamWorker(RedisWorker):
                 await asyncio.sleep(1)
 
     async def process_event(self, data: dict):
-        if data["type"] in ("SAVE", "UPDATE",):
-            user_data = json.loads(data["data"])
-            user = mapping.map_redis_data_to_user_entity(user_data)
-            if data["type"] == "UPDATE":
-                await self.repo.update(user)
-            else:
-                await self.repo.add(user)
 
-        elif data["type"] == "DELETE":
-            await self.repo.delete_by_id(int(data["id"]))
+        async with self._session_maker() as session:
+            repo = SqlalchemyUserRepo(session)
+            if data["type"] in ("SAVE", "UPDATE",):
+                user_data = self._load(data["raw"])
+                if user_data is None:
+                    return
+                user = mapping.map_redis_data_to_user_entity(user_data)
+                if data["type"] == "UPDATE":
+                    await repo.update(user)
+                else:
+                    await repo.add(user)
+
+            elif data["type"] == "DELETE":
+                await repo.delete_by_id(int(data["id"]))
+            
+            await session.commit()

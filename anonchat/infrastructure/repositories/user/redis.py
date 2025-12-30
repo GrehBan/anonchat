@@ -35,7 +35,7 @@ class RedisUserRepo(RedisRepo, IUserRepo):
         async with self.redis.pipeline() as pipe:
             pipe.set(key, raw, ex=self._ttl)
             
-            pipe.xadd(key_gen.STREAM_USERS, {"type": event_type, "data": raw})
+            pipe.xadd(key_gen.get_user_stream(user.id), {"type": event_type, "data": raw})
             
             await pipe.execute()
 
@@ -52,5 +52,5 @@ class RedisUserRepo(RedisRepo, IUserRepo):
     async def delete_by_id(self, id: int) -> None:
         async with self.redis.pipeline() as pipe:
             pipe.delete(key_gen.user_data(id))
-            pipe.xadd(key_gen.STREAM_USERS, {"type": "DELETE", "id": str(id)})
+            pipe.xadd(key_gen.get_user_stream(id), {"type": "DELETE", "id": str(id)})
             await pipe.execute()

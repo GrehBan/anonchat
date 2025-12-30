@@ -12,12 +12,14 @@ logger = logging.getLogger(__name__)
 
 
 class RedisWorker(IWokrker):
-    def __init__(self, redis: Redis, group_name: str | None = None) -> None:
+    def __init__(self, redis: Redis, group_name: str | None = None, stream_key: str | None = None, shard_id: int | None = None) -> None:
         self._redis = redis
         self._running = False
-        self._group_name = group_name
+        self._group_name = group_name or ""
+        self._stream_key = stream_key or ""
         self._id = id(self)
-    
+        self._shard_id = shard_id or 0
+
     @property
     def redis(self) -> Redis:
         return self._redis
@@ -25,7 +27,10 @@ class RedisWorker(IWokrker):
     def stop(self):
         self._running = False
 
-        logger.info(f"{self.__class__.__name__} Stopped")
+        logger.info(
+            f"Worker {self.__class__.__name__} "
+            f"SHARD-{self._shard_id}-{self._id} Stopped."
+        )
 
     async def consume(self) -> None:
         raise NotImplementedError
@@ -86,3 +91,11 @@ class RedisWorker(IWokrker):
             msg_id = msg_id.decode()
         
         return stream, msg_id
+    
+    def _load(self, data: str) -> dict | None:
+        try:
+            return json.loads(data)
+        except json.JSONDecodeError as e:
+            pass
+
+        return None

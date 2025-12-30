@@ -33,7 +33,7 @@ class RedisMessageRepo(RedisRepo, IMessageRepo):
             pipe.expire(timeline_key, self._ttl)
 
             stream_data = {k: v for k, v in stream_data.items() if v}
-            pipe.xadd(key_gen.STREAM_MESSAGES, {"type": "SAVE", "raw": raw})
+            pipe.xadd(key_gen.get_message_stream(message.id), {"type": "SAVE", "raw": raw})
             
             await pipe.execute()
             
@@ -60,7 +60,7 @@ class RedisMessageRepo(RedisRepo, IMessageRepo):
             
             pipe.lrem(timeline_key, 0, message_id)
 
-            pipe.xadd(key_gen.STREAM_MESSAGES, {"type": "DELETE", "id": str(message_id)})
+            pipe.xadd(key_gen.get_message_stream(message_id), {"type": "DELETE", "id": str(message_id)})
             
             await pipe.execute()
 

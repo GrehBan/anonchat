@@ -16,9 +16,11 @@ class RedisChatRepo(RedisRepo, IChatRepo):
 
 
     async def add(self, chat: PrivateChat) -> PrivateChat:
+
         chat_id = await self.redis.incr(key_gen.CHAT_SEQ)
         chat.id = chat_id
-        
+        stream_key = key_gen.get_chat_stream(chat.id)
+     
         data = mapping.map_chat_entity_to_redis_data(chat)
         
         raw = json.dumps(data)
@@ -29,7 +31,7 @@ class RedisChatRepo(RedisRepo, IChatRepo):
             pipe.set(key_gen.user_active_chat(chat.user1_id), chat_id, ex=self._ttl)
             pipe.set(key_gen.user_active_chat(chat.user2_id), chat_id, ex=self._ttl)
             
-            pipe.xadd(key_gen.STREAM_CHATS, {"type": "CREATE", "data": raw})
+            pipe.xadd(stream_key, {"type": "CREATE", "data": raw})
             
             await pipe.execute()
             
@@ -74,6 +76,6 @@ class RedisChatRepo(RedisRepo, IChatRepo):
                 "id": str(chat_id), 
                 "closed_at": datetime.utcnow().isoformat()
             }
-            pipe.xadd(key_gen.STREAM_CHATS, event)
+            pipe.xadd(key_gen.get_chat_stream(chat_id), event)
             
             await pipe.execute()

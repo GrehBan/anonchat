@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from anonchat.infrastructure.cache.worker import RedisWorker
+from anonchat.infrastructure.cache import key_gen
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ class CleanupMessagesWorker(RedisWorker):
         while self._running:
             try:
                 cursor = 0
-                pattern = "chat:*:timeline"
+                pattern = key_gen.CHAT_MESSAGES_PATTERN
                 
                 while self._running:
                     cursor, keys = await self.redis.scan(
