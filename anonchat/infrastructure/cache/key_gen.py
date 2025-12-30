@@ -47,7 +47,6 @@ def get_chat_shard(shard_id: int) -> str:
 def get_chat_shard_group(shard_id: int) -> str:
     return f"{NAMESPACE}:db-sync-chats-shard-{shard_id}"
 
-
 def get_message_stream(message_id: int) -> str:
     shard_id = message_id % SHARDS_COUNT
     return f"{NAMESPACE}:stream:messages:{shard_id}"
