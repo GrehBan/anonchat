@@ -1,3 +1,5 @@
+from typing import Protocol
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from anonchat.domain.base.repo import IRepo

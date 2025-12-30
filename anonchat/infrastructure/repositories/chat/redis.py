@@ -1,33 +1,33 @@
 import json
 from datetime import datetime
-from redis.asyncio import Redis
+from typing import Final
 
 from anonchat.infrastructure.repositories.base.redis import RedisRepo
 from anonchat.domain.chat.repo import IChatRepo
 from anonchat.domain.chat.aggregate import PrivateChat
 from anonchat.infrastructure.cache import key_gen
+from anonchat.infrastructure.repositories.chat import mapping
+
+TTL: Final[int] = 86400 * 7
 
 
 class RedisChatRepo(RedisRepo, IChatRepo):
+    DEFAULT_TTL: int | None = TTL
+
+
     async def add(self, chat: PrivateChat) -> PrivateChat:
         chat_id = await self.redis.incr(key_gen.CHAT_SEQ)
         chat.id = chat_id
         
-        data = {
-            "id": chat.id,
-            "u1": chat.user1_id,
-            "u2": chat.user2_id,
-            "active": int(chat.is_active),
-            "dt": chat.created_at.isoformat()
-        }
+        data = mapping.map_chat_entity_to_redis_data(chat)
         
         raw = json.dumps(data)
 
         async with self.redis.pipeline() as pipe:
             pipe.set(key_gen.chat_meta(chat_id), raw)
             
-            pipe.set(key_gen.user_active_chat(chat.user1_id), chat_id)
-            pipe.set(key_gen.user_active_chat(chat.user2_id), chat_id)
+            pipe.set(key_gen.user_active_chat(chat.user1_id), chat_id, ex=self._ttl)
+            pipe.set(key_gen.user_active_chat(chat.user2_id), chat_id, ex=self._ttl)
             
             pipe.xadd(key_gen.STREAM_CHATS, {"type": "CREATE", "data": raw})
             
@@ -41,13 +41,7 @@ class RedisChatRepo(RedisRepo, IChatRepo):
             return None
         
         data = json.loads(raw)
-        return PrivateChat(
-            id=data["id"],
-            user1_id=data["u1"],
-            user2_id=data["u2"],
-            is_active=bool(data["active"]),
-            created_at=datetime.fromisoformat(data["dt"])
-        )
+        return mapping.map_redis_data_to_chat_entity(data)
 
     async def get_active_chat_for_user(self, user_id: int) -> PrivateChat | None:
         chat_id = await self.redis.get(key_gen.user_active_chat(user_id))
@@ -77,7 +71,7 @@ class RedisChatRepo(RedisRepo, IChatRepo):
 
             event = {
                 "type": "CLOSE", 
-                "chat_id": str(chat_id), 
+                "id": str(chat_id), 
                 "closed_at": datetime.utcnow().isoformat()
             }
             pipe.xadd(key_gen.STREAM_CHATS, event)

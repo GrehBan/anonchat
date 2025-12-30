@@ -27,12 +27,17 @@ class SqlalchemyUserRepo(SqlalchemyRepo, IUserRepo):
             
         return map_user_model_to_entity(model)
 
-    async def add(self, user: User) -> None:
+    async def add(self, user: User) -> User:
         user_model = map_user_entity_to_model(user)
         self.session.add(user_model)
         await self.session.flush()
         return user
 
+    async def update(self, user: User) -> User:
+        user_model = map_user_entity_to_model(user)
+        await self.session.merge(user_model)
+        await self.session.flush()
+        return user
 
     async def delete_by_id(self, id: int) -> None:
         stmt = delete(UserModel).where(UserModel.user_id == id)

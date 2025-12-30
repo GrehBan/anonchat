@@ -12,10 +12,19 @@ from anonchat.infrastructure.database.models.chat.mapping import (
 
 
 class SqlalchemyChatRepo(SqlalchemyRepo, IChatRepo):
+
     async def add(self, chat: PrivateChat) -> PrivateChat:
         model = map_chat_entity_to_model(chat)
 
         self.session.add(model)
+        await self.session.flush()
+        
+        return chat
+
+    async def update(self, chat: PrivateChat) -> PrivateChat:
+        model = map_chat_entity_to_model(chat)
+
+        await self.session.merge(model)
         await self.session.flush()
         
         return chat

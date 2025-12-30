@@ -47,7 +47,7 @@ class UserInterestModel(Base):
         ForeignKey("users.user_id", ondelete="CASCADE"), 
         primary_key=True
     )
-    interest_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    interest_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
 
 class UserModel(Base):

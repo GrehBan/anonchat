@@ -5,6 +5,7 @@ from anonchat.domain.chat.dto import StartChatRequestDTO, PrivateChatDTO
 from anonchat.domain.chat.aggregate import PrivateChat
 from anonchat.domain.chat import mapping
 from anonchat.domain.user import mapping as user_mapping
+from anonchat.domain.base.exceptions import DomainException
 from anonchat.domain.user.exceptions import UserAlreadyInChatException, UserIsBusyException, UserNotFoundException, UserIsSelfException
 from anonchat.infrastructure.cache import key_gen
 
@@ -61,6 +62,7 @@ class StartChat(IStartChat):
                             user_mapping.user_to_profile_dto(user1),
                             user_mapping.user_to_profile_dto(user2)
                         )
-        except Exception as e:
+        except DomainException:
+            raise
+        except ValueError as e:
             raise ValueError("System is busy, please try again") from e
-

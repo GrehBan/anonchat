@@ -1,4 +1,6 @@
 import json
+from typing import Final
+
 from redis.asyncio import Redis
 
 from anonchat.infrastructure.repositories.base.redis import RedisRepo
@@ -6,46 +8,34 @@ from anonchat.domain.user.repo import IUserRepo
 from anonchat.domain.user.aggregate import User
 from anonchat.domain.user.value_object import UserSettings, Reputation, Status, Interests
 from anonchat.infrastructure.cache import key_gen
+from anonchat.infrastructure.repositories.user import mapping
+
+TTL: Final[int] = 86400 * 30
 
 
 class RedisUserRepo(RedisRepo, IUserRepo):
+    DEFAULT_TTL: int | None = TTL
 
     async def add(self, user: User) -> User:
         await self._save(user)
 
         return user
 
-    async def _save(self, user: User) -> None:
-        data = {
-            "id": user.id,
-            "full_name": user.full_name,
-            "username": user.username,
-            "locale": user.locale,
-            "gender": user.gender,
-            "settings": {
-                "search_gender": user.settings.search_gender,
-                "min_age": user.settings.min_age,
-                "max_age": user.settings.max_age
-            },
-            "reputation": {
-                "likes": user.reputation.likes,
-                "dislikes": user.reputation.dislikes
-            },
-            "status": {
-                "val": user.status.user_status,
-                "promo": user.status.promotion,
-                "vip": user.status.vip
-            },
-            "interests": list(user.interests.user_interests)
-        }
+    async def update(self, user: User) -> User:
+        await self._save(user, event_type="UPDATE")
+
+        return user
+
+    async def _save(self, user: User, event_type: str = "SAVE") -> None:
+        data = mapping.map_user_entity_to_redis_data(user)
         
         raw = json.dumps(data)
         key = key_gen.user_data(user.id)
 
         async with self.redis.pipeline() as pipe:
-            pipe.set(key, raw)
+            pipe.set(key, raw, ex=self._ttl)
             
-            pipe.xadd(key_gen.STREAM_USERS, {"type": "SAVE", "data": raw})
+            pipe.xadd(key_gen.STREAM_USERS, {"type": event_type, "data": raw})
             
             await pipe.execute()
 
@@ -56,28 +46,8 @@ class RedisUserRepo(RedisRepo, IUserRepo):
         
         data = json.loads(raw)
         
-        return User(
-            id=data["id"],
-            full_name=data["full_name"],
-            username=data["username"],
-            locale=data["locale"],
-            gender=data["gender"],
-            settings=UserSettings(
-                search_gender=data["settings"]["search_gender"],
-                min_age=data["settings"]["min_age"],
-                max_age=data["settings"]["max_age"]
-            ),
-            reputation=Reputation(
-                likes=data["reputation"]["likes"],
-                dislikes=data["reputation"]["dislikes"]
-            ),
-            status=Status(
-                user_status=data["status"]["val"],
-                promotion=data["status"]["promo"],
-                vip=data["status"]["vip"]
-            ),
-            interests=Interests(set(data["interests"]))
-        )
+        return mapping.map_redis_data_to_user_entity(data)
+
 
     async def delete_by_id(self, id: int) -> None:
         async with self.redis.pipeline() as pipe:

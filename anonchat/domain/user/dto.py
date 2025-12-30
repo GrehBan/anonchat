@@ -29,16 +29,3 @@ class SearchParamsDTO(BaseDTO):
     my_gender: Gender
     search_gender: Gender
     interests: set[int] = Field(default_factory=set)
-
-
-class UserUpdateDTO(BaseDTO):
-    id: int
-    full_name: str | None = None
-    username: str | None = None
-    locale: Locale | None = None
-    status: UserStatus | None = None
-    promotion: UserPromotion | None = None
-    
-    gender: Gender | None = None
-    interests: set[int] | None = None
-    vip: bool | None = None
