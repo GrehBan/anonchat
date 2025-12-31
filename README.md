@@ -119,6 +119,52 @@ alembic upgrade head
 ```
 
 
+5. **Database Setup: Virtual Sequencing (Materialized View)**
+The application uses a gapless `virtual_sequence` for chat history pagination. You must create the necessary Materialized View and Triggers manually or via a raw SQL migration:
+```sql
+-- Create Materialized View for virtual sequencing
+CREATE MATERIALIZED VIEW messages_ordered AS
+SELECT 
+    message_id,
+    chat_id,
+    sender_id,
+    sequence AS original_sequence,
+    ROW_NUMBER() OVER (
+        PARTITION BY chat_id
+        ORDER BY sequence ASC
+    ) - 1 AS virtual_sequence,
+    content_text,
+    content_media,
+    created_at
+FROM messages
+WITH DATA;
+
+-- Unique index (Required for REFRESH CONCURRENTLY)
+CREATE UNIQUE INDEX idx_messages_ordered_pk
+ON messages_ordered (message_id);
+
+-- Index for lookup by chat_id + virtual_sequence
+CREATE INDEX idx_messages_ordered_chat_vseq
+ON messages_ordered (chat_id, virtual_sequence);
+
+-- Function to refresh the view concurrently
+CREATE OR REPLACE FUNCTION refresh_messages_ordered()
+RETURNS TRIGGER AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW CONCURRENTLY messages_ordered;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to auto-refresh on INSERT/UPDATE/DELETE
+CREATE TRIGGER trigger_refresh_messages_ordered
+AFTER INSERT OR UPDATE OR DELETE ON messages
+FOR EACH STATEMENT
+EXECUTE FUNCTION refresh_messages_ordered();
+
+```
+
+
 
 ---
 
