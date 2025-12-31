@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from anonchat.domain.base.value_object import IValueObject
+from anonchat.domain.base.exceptions import ValidationException
 
 
 @dataclass(frozen=True)
@@ -9,10 +10,10 @@ class MessageText(IValueObject["MessageText"]):
 
     def __post_init__(self) -> None:
         if not self.value or not self.value.strip():
-            raise ValueError("Message text cannot be empty or whitespace only")
+            raise ValidationException("Message text cannot be empty or whitespace only")
         
         if len(self.value) > 4096:
-            raise ValueError("Message text exceeds maximum length of 4096 characters")
+            raise ValidationException("Message text exceeds maximum length of 4096 characters")
 
 
 @dataclass(frozen=True)
@@ -21,7 +22,7 @@ class MediaAttachment(IValueObject["MediaAttachment"]):
     
     def __post_init__(self) -> None:
         if not self.file_id:
-            raise ValueError("Media file_id cannot be empty")
+            raise ValidationException("Media file_id cannot be empty")
 
 
 @dataclass(frozen=True)
@@ -31,7 +32,7 @@ class MessageContent(IValueObject["MessageContent"]):
 
     def __post_init__(self) -> None:
         if self.text is None and not self.media:
-            raise ValueError("Message content must contain at least text or media")
+            raise ValidationException("Message content must contain at least text or media")
 
     @property
     def has_media(self) -> bool:

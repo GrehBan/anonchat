@@ -1,16 +1,17 @@
-from anonchat.domain.base.exceptions import DomainException
+from anonchat.domain.base.exceptions import NotFoundException, PermissionDeniedException, ConcurrencyException, SystemIsBusyException
 
 
-class UserNotFoundException(DomainException):
-    pass
-
-class UserAlreadyInChatException(DomainException):
+class UserNotFoundException(NotFoundException):
     pass
 
 
-class UserIsBusyException(DomainException):
+class UserAlreadyInChatException(ConcurrencyException):
     pass
 
 
-class UserIsSelfException(DomainException):
+class UserIsBusyException(SystemIsBusyException):
+    pass
+
+
+class UserIsSelfException(PermissionDeniedException):
     pass

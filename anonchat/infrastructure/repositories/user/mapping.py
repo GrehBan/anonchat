@@ -17,7 +17,7 @@ class RedisUserReputation(TypedDict):
 
 class RedisUserStatus(TypedDict):
     val: str
-    promo: bool
+    promo: str
     vip: bool
 
 

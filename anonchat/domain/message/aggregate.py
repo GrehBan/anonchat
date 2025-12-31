@@ -13,6 +13,7 @@ class Message(IAggregateRoot):
     content: MessageContent
     sequence: int = 0
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    deleted_at: datetime | None = None
 
     def edit_text(self, new_text: str) -> None:
         if not self.content.text:
@@ -21,3 +22,11 @@ class Message(IAggregateRoot):
     
     def attach_media(self, *media: MediaAttachment) -> None:
         self.content = self.content.attach_media(*media)
+
+    @property
+    def is_deleted(self) -> bool:
+        return self.deleted_at is not None
+
+    def soft_delete(self) -> None:
+        if not self.is_deleted:
+            self.deleted_at = datetime.now(timezone.utc)

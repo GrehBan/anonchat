@@ -17,7 +17,8 @@ def map_message_model_to_entity(model: MessageModel) -> Message:
         sender_id=model.sender_id,
         content=content_vo,
         sequence=model.sequence,
-        created_at=model.created_at
+        created_at=model.created_at,
+        deleted_at=model.deleted_at
     )
 
 
@@ -32,5 +33,6 @@ def map_message_entity_to_model(entity: Message) -> MessageModel:
         content_text=text_val,
         content_media=media_val,
         sequence=entity.sequence,
-        created_at=entity.created_at
+        created_at=entity.created_at,
+        deleted_at=entity.deleted_at
     )

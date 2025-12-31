@@ -1,5 +1,3 @@
-from typing import Protocol
-
 from redis.asyncio import Redis
 
 from anonchat.domain.base.repo import IRepo

@@ -4,3 +4,19 @@ class DomainException(Exception):
 
 class PermissionDeniedException(DomainException):
     pass
+
+
+class ValidationException(DomainException):
+    pass
+
+
+class NotFoundException(DomainException):
+    pass
+
+
+class ConcurrencyException(DomainException):
+    pass
+
+
+class SystemIsBusyException(DomainException):
+    pass

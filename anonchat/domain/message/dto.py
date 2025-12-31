@@ -10,6 +10,8 @@ class MessageDTO(BaseDTO):
     sender_id: int
     text: str
     created_at: datetime
+    sequence: int = 0
+    deleted_at: datetime | None = None
     media: list[str] = Field(default_factory=list)
 
 

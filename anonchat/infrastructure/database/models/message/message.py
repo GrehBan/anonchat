@@ -13,6 +13,7 @@ class MessageModel(Base):
     
     __table_args__ = (
         Index('idx_chat_sequence', 'chat_id', 'sequence'),
+        Index('idx_chat_active', 'chat_id', postgresql_where='deleted_at IS NULL'),
     )
 
     message_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
@@ -26,3 +27,4 @@ class MessageModel(Base):
     content_media: Mapped[List[str]] = mapped_column(JSONB, default=list, nullable=False)
     
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, default=None)

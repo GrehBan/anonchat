@@ -42,5 +42,3 @@ class SqlalchemyUserRepo(SqlalchemyRepo, IUserRepo):
     async def delete_by_id(self, id: int) -> None:
         stmt = delete(UserModel).where(UserModel.user_id == id)
         await self.session.execute(stmt)
-
-        await self.session.flush()

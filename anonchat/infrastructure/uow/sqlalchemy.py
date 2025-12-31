@@ -7,8 +7,8 @@ from anonchat.infrastructure.uow.message.sqlalchemy import SqlalchemyMessageUoW
 
 
 class SqlalchemyUoW(BaseSqlalchemyUoW):
-    def __init__(self, session: AsyncSession) -> None:
-        super().__init__(session)
+    def __init__(self, session: AsyncSession, auto_commit: bool = False) -> None:
+        super().__init__(session, auto_commit)
 
         self.chat = SqlalchemyChatUoW(session)
         self.user = SqlalchemyUserUoW(session)

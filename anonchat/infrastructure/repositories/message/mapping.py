@@ -1,6 +1,5 @@
 import datetime
-import json
-from typing import TypedDict, List, Tuple
+from typing import TypedDict, List
 
 from anonchat.domain.message.aggregate import Message
 from anonchat.domain.message.value_object import (
@@ -8,6 +7,7 @@ from anonchat.domain.message.value_object import (
     MessageContent,
     MediaAttachment,
 )
+from anonchat.infrastructure.cache.serialization import json
 
 
 class MessageRedisData(TypedDict):
@@ -18,6 +18,7 @@ class MessageRedisData(TypedDict):
     txt: str
     media: List[str]
     dt: str
+    del_at: str | None
 
 
 class MessageRedisStreamData(TypedDict):
@@ -28,6 +29,7 @@ class MessageRedisStreamData(TypedDict):
     txt: str
     media: str
     dt: str
+    del_at: str
 
 
 def map_message_entity_to_redis_data(
@@ -35,6 +37,7 @@ def map_message_entity_to_redis_data(
 ) -> tuple[MessageRedisData, MessageRedisStreamData]:
     media = [m.file_id for m in message.content.media]
     dt = message.created_at.isoformat()
+    del_at = message.deleted_at.isoformat() if message.deleted_at else None
 
     redis_data: MessageRedisData = {
         "id": message.id,
@@ -44,6 +47,7 @@ def map_message_entity_to_redis_data(
         "txt": message.content.raw_text,
         "media": media,
         "dt": dt,
+        "del_at": del_at,
     }
 
     stream_data: MessageRedisStreamData = {
@@ -54,6 +58,7 @@ def map_message_entity_to_redis_data(
         "txt": message.content.raw_text or "",
         "media": json.dumps(media),
         "dt": dt,
+        "del_at": del_at or "",
     }
 
     return redis_data, stream_data
@@ -62,6 +67,10 @@ def map_message_entity_to_redis_data(
 def map_redis_data_to_message_entity(data: MessageRedisData) -> Message:
     text_vo = MessageText(data["txt"]) if data.get("txt") else None
     media_vo = tuple(MediaAttachment(mid) for mid in data.get("media", []))
+    
+    deleted_at = None
+    if data.get("del_at"):
+        deleted_at = datetime.datetime.fromisoformat(data["del_at"])
 
     return Message(
         id=data["id"],
@@ -73,4 +82,5 @@ def map_redis_data_to_message_entity(data: MessageRedisData) -> Message:
             media=media_vo,
         ),
         created_at=datetime.datetime.fromisoformat(data["dt"]),
+        deleted_at=deleted_at,
     )

@@ -1,11 +1,13 @@
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from anonchat.domain.base.uow import IUoW
 
 
 class BaseSqlalchemyUoW(IUoW):
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, auto_commit: bool = False) -> None:
         self._session = session
+        self._auto_commit = auto_commit
     
     @property
     def session(self) -> AsyncSession:
@@ -21,6 +23,7 @@ class BaseSqlalchemyUoW(IUoW):
         return self
     
     async def __aexit__(self, exc_type, exc_value, traceback) -> None:
+        await self.commit()
         await self.close()
     
     async def close(self):

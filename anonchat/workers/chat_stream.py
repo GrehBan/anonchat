@@ -1,6 +1,4 @@
 import asyncio
-import json
-import logging
 
 from redis.asyncio import Redis
 from redis import exceptions
@@ -9,10 +7,8 @@ from sqlalchemy.orm import sessionmaker
 
 from anonchat.infrastructure.cache.worker import RedisWorker
 from anonchat.infrastructure.cache import key_gen
-from anonchat.infrastructure.repositories.chat import mapping
-from anonchat.infrastructure.repositories.chat.sqlalchemy import SqlalchemyChatRepo
-
-logger = logging.getLogger(__name__)
+from anonchat.application.chat.handlers.redis import ProcessRedisChatEvent
+from anonchat.infrastructure.uow.chat.sqlalchemy import SqlalchemyChatUoW
 
 
 class ChatStreamWorker(RedisWorker):
@@ -28,9 +24,7 @@ class ChatStreamWorker(RedisWorker):
             self._stream_key,
         )
         self._running = True
-        logger.info(
-            f"Worker {self.__class__.__name__} "
-            f"SHARD-{self._shard_id}-{self._id} "
+        self._logger.info(
             f"started. Listening: {self._stream_key}"
         )
 
@@ -44,46 +38,25 @@ class ChatStreamWorker(RedisWorker):
                     block=1000
                 )
                 
-                for stream, messages in events:
-                    for msg_id, data in messages:
-                        await self.process_with_retry(stream, msg_id, data)
+                if not events:
+                    continue
+                
+                async with self._session_maker() as session:
+                    handler = ProcessRedisChatEvent()
+                    for stream, messages in events:
+                        for msg_id, data in messages:
+                            try:
+                                async with SqlalchemyChatUoW(session) as uow:
+                                    await handler.handle(data, uow)
+                                    await uow.commit()
+                            except Exception as e:
+                                self._logger.error(f"Skipping bad message {msg_id}", e, exc_info=True)
+                        await self.redis.xack(stream, self._group_name, msg_id)
 
             except (ConnectionError, exceptions.ConnectionError) as e:
-                logger.error(f"Redis connection lost: {e}")
+                self._logger.error(f"Redis connection lost: {e}")
                 await asyncio.sleep(5)
             
             except Exception as e:
-                logger.error(f"Consumer error: {e}", exc_info=True)
+                self._logger.error(f"Consumer error: {e}", exc_info=True)
                 await asyncio.sleep(1)
-
-    async def process_event(self, data: dict) -> None:
-
-        async with self._session_maker() as session:
-            repo = SqlalchemyChatRepo(session)
-
-            data_type = self._get_data_and_decode(data, "type")
-
-            if data_type == "CREATE":
-
-                raw = self._get_data_and_decode(data, "raw")
-                chat_data = self._load(raw)
-
-                if chat_data is None:
-                    return
-                
-                chat = mapping.map_redis_data_to_chat_entity(chat_data)
-                if (await repo.get_by_id(chat.id)):
-                    return
-                await repo.add(chat)
-
-            elif data_type == "CLOSE":
-
-                _id = self._get_data_and_decode(data, "id")
-                chat = await repo.get_by_id(chat_id=int(_id))
-                
-                if chat is not None:
-                    chat.is_active = False
-                    await repo.update(chat)
-
-            await session.commit()
-

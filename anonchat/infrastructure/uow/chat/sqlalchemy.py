@@ -8,8 +8,8 @@ from anonchat.infrastructure.repositories.message.sqlalchemy import SqlalchemyMe
 
 
 class SqlalchemyChatUoW(BaseSqlalchemyUoW, IChatUoW):
-    def __init__(self, session: AsyncSession) -> None:
-        super().__init__(session)
+    def __init__(self, session: AsyncSession, auto_commit: bool = False) -> None:
+        super().__init__(session, auto_commit)
         self.repo = SqlalchemyChatRepo(session)
         self.user_repo = SqlalchemyUserRepo(session)
         self.message_repo = SqlalchemyMessageRepo(session)

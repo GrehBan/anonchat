@@ -1,14 +1,12 @@
 import json
 from typing import Final
 
-from redis.asyncio import Redis
-
 from anonchat.infrastructure.repositories.base.redis import RedisRepo
 from anonchat.domain.user.repo import IUserRepo
 from anonchat.domain.user.aggregate import User
-from anonchat.domain.user.value_object import UserSettings, Reputation, Status, Interests
 from anonchat.infrastructure.cache import key_gen
 from anonchat.infrastructure.repositories.user import mapping
+from anonchat.infrastructure.cache.serialization import json
 
 TTL: Final[int] = 86400 * 30
 

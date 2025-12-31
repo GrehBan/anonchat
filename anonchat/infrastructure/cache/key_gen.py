@@ -56,3 +56,6 @@ def get_message_shard(shard_id: int) -> str:
 
 def get_message_shard_group(shard_id: int) -> str:
     return f"{NAMESPACE}:db-sync-messages-shard-{shard_id}"
+
+def extract_chat_id_from_timeline_key(key: str) -> int:
+    return int(key.split(b':')[2] if isinstance(key, bytes) else key.split(':')[2])

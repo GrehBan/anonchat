@@ -73,4 +73,3 @@ class SqlalchemyChatRepo(SqlalchemyRepo, IChatRepo):
     async def delete_chat(self, chat_id: int) -> None:
         stmt = delete(PrivateChatModel).where(PrivateChatModel.chat_id == chat_id)
         await self.session.execute(stmt)
-        await self.session.flush()

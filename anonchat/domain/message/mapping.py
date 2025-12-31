@@ -7,11 +7,13 @@ def message_to_dto(message: Message) -> MessageDTO:
     media_list = [m.file_id for m in message.content.media] if message.content.has_media else []
 
     return MessageDTO(
-        id=message.id,  # Fixed
+        id=message.id,
         chat_id=message.chat_id,
         sender_id=message.sender_id,
         text=message.content.raw_text,
+        sequence=message.sequence,
         created_at=message.created_at,
+        deleted_at=message.deleted_at,
         media=media_list
     )
 
@@ -23,3 +25,9 @@ def dto_to_message_content(dto: SendMessageDTO) -> MessageContent:
         text=text_vo,
         media=media_vo
     )
+
+def content_to_message_content_entity(text: str | None, media: list[str]) -> MessageContent:
+    text_vo = MessageText(text) if text else None
+    media_vo = tuple(MediaAttachment(file_id=fid) for fid in (media or []))
+    
+    return MessageContent(text=text_vo, media=media_vo)

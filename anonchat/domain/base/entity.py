@@ -1,5 +1,4 @@
-from typing import Protocol, TypeVar, Generic
-from abc import ABC
+from typing import Protocol, TypeVar
 
 ET = TypeVar("ET", bound="IEntity")
 
@@ -8,7 +7,7 @@ class IEntity(Protocol):
     id: int
 
 
-class BaseEntity(IEntity, ABC):
+class BaseEntity(IEntity):
     def __eq__(self: ET, other: ET) -> bool:
         if not isinstance(other, type(self)):
             return False

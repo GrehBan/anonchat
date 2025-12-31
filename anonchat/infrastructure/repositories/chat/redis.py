@@ -1,5 +1,4 @@
-import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Final
 
 from anonchat.infrastructure.repositories.base.redis import RedisRepo
@@ -7,6 +6,7 @@ from anonchat.domain.chat.repo import IChatRepo
 from anonchat.domain.chat.aggregate import PrivateChat
 from anonchat.infrastructure.cache import key_gen
 from anonchat.infrastructure.repositories.chat import mapping
+from anonchat.infrastructure.cache.serialization import json
 
 TTL: Final[int] = 86400 * 7
 
@@ -16,26 +16,20 @@ class RedisChatRepo(RedisRepo, IChatRepo):
 
 
     async def add(self, chat: PrivateChat) -> PrivateChat:
-
-        async with self.redis.pipeline() as pipe:
-
-            chat_id = await pipe.incr(key_gen.CHAT_SEQ)
-            chat.id = chat_id
-            stream_key = key_gen.get_chat_stream(chat.id)
+        chat_id = await self.redis.incr(key_gen.CHAT_SEQ)
+        chat.id = chat_id
         
+        async with self.redis.pipeline() as pipe:
             data = mapping.map_chat_entity_to_redis_data(chat)
-            
             raw = json.dumps(data)
-
-            pipe.set(key_gen.chat_meta(chat_id), raw)
             
+            pipe.set(key_gen.chat_meta(chat_id), raw, ex=self._ttl)
             pipe.set(key_gen.user_active_chat(chat.user1_id), chat_id, ex=self._ttl)
             pipe.set(key_gen.user_active_chat(chat.user2_id), chat_id, ex=self._ttl)
-            
-            pipe.xadd(stream_key, {"type": "CREATE", "raw": raw})
+            pipe.xadd(key_gen.get_chat_stream(chat.id), {"type": "CREATE", "raw": raw})
             
             await pipe.execute()
-            
+        
         return chat
 
     async def get_by_id(self, chat_id: int) -> PrivateChat | None:
@@ -69,13 +63,13 @@ class RedisChatRepo(RedisRepo, IChatRepo):
             pipe.delete(key_gen.user_active_chat(chat.user1_id))
             pipe.delete(key_gen.user_active_chat(chat.user2_id))
             
-            pipe.expire(key_gen.chat_meta(chat_id))
-            pipe.expire(key_gen.chat_messages_list(chat_id))
+            pipe.expire(key_gen.chat_meta(chat_id), 5)
+            pipe.expire(key_gen.chat_messages_list(chat_id), 5)
 
             event = {
                 "type": "CLOSE", 
                 "id": str(chat_id), 
-                "closed_at": datetime.utcnow().isoformat()
+                "closed_at": datetime.now(timezone.utc).isoformat()
             }
             pipe.xadd(key_gen.get_chat_stream(chat_id), event)
             
