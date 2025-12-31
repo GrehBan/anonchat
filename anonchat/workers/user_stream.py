@@ -74,6 +74,8 @@ class UserStreamWorker(RedisWorker):
                 if data_type == "UPDATE":
                     await repo.update(user)
                 else:
+                    if (await repo.get_by_id(user.id)):
+                        return
                     await repo.add(user)
 
             elif data_type == "DELETE":

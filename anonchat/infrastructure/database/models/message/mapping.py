@@ -16,6 +16,7 @@ def map_message_model_to_entity(model: MessageModel) -> Message:
         chat_id=model.chat_id,
         sender_id=model.sender_id,
         content=content_vo,
+        sequence=model.sequence,
         created_at=model.created_at
     )
 
@@ -25,9 +26,11 @@ def map_message_entity_to_model(entity: Message) -> MessageModel:
     media_val = [m.file_id for m in entity.content.media]
 
     return MessageModel(
+        message_id=entity.id,
         chat_id=entity.chat_id,
         sender_id=entity.sender_id,
         content_text=text_val,
         content_media=media_val,
+        sequence=entity.sequence,
         created_at=entity.created_at
     )

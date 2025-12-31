@@ -11,6 +11,7 @@ class Message(IAggregateRoot):
     chat_id: int
     sender_id: int
     content: MessageContent
+    sequence: int = 0
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def edit_text(self, new_text: str) -> None:

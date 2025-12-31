@@ -6,7 +6,7 @@ class RedisLockFactory(ILockFactory):
     def __init__(self, client: Redis):
         self._client = client
 
-    def lock(self, key: str, ttl_ms: int = 5000, blocking_timeout: int | float = 2.0) -> ILock:
+    def lock(self, key: str, ttl_ms: int = 5000, blocking_timeout: int | float = 5.0) -> ILock:
         return self._client.lock(
             name=key, 
             timeout=ttl_ms / 1000.0,

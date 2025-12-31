@@ -1,4 +1,4 @@
-from sqlalchemy import select, delete, func, desc
+from sqlalchemy import select, delete, func, asc
 
 from anonchat.domain.message.aggregate import Message
 from anonchat.domain.message.repo import IMessageRepo
@@ -32,7 +32,7 @@ class SqlalchemyMessageRepo(SqlalchemyRepo, IMessageRepo):
         stmt = (
             select(MessageModel)
             .where(MessageModel.chat_id == chat_id)
-            .order_by(desc(MessageModel.created_at))
+            .order_by(asc(MessageModel.sequence))
             .limit(limit)
             .offset(offset)
         )

@@ -101,7 +101,7 @@ class RedisWorker(IWokrker):
 
         return None
 
-    def _get_data_and_decode(data: dict, key: str) -> Any:
+    def _get_data_and_decode(self, data: dict, key: str) -> Any:
         value = data.get(key.encode())
         if value is None:
             value = data.get(key)

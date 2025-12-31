@@ -72,6 +72,8 @@ class ChatStreamWorker(RedisWorker):
                     return
                 
                 chat = mapping.map_redis_data_to_chat_entity(chat_data)
+                if (await repo.get_by_id(chat.id)):
+                    return
                 await repo.add(chat)
 
             elif data_type == "CLOSE":

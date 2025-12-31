@@ -70,10 +70,12 @@ class MessageStreamWorker(RedisWorker):
                 if message_data is None:
                     return
                 message = mapping.map_redis_data_to_message_entity(message_data)
+                if (await repo.get_by_id(message.id)):
+                    return
                 await repo.add(message)
 
             elif data_type == "DELETE":
-                _id = self._get_data_and_decode("id")
+                _id = self._get_data_and_decode(data, "id")
                 await repo.delete(int(_id))
 
             await session.commit()

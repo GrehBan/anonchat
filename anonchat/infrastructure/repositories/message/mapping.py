@@ -14,6 +14,7 @@ class MessageRedisData(TypedDict):
     id: int
     cid: int
     sid: int
+    seq: int
     txt: str
     media: List[str]
     dt: str
@@ -23,6 +24,7 @@ class MessageRedisStreamData(TypedDict):
     id: str
     cid: str
     sid: str
+    seq: str
     txt: str
     media: str
     dt: str
@@ -38,6 +40,7 @@ def map_message_entity_to_redis_data(
         "id": message.id,
         "cid": message.chat_id,
         "sid": message.sender_id,
+        "seq": message.sequence,
         "txt": message.content.raw_text,
         "media": media,
         "dt": dt,
@@ -47,6 +50,7 @@ def map_message_entity_to_redis_data(
         "id": str(message.id),
         "cid": str(message.chat_id),
         "sid": str(message.sender_id),
+        "seq": str(message.sequence),
         "txt": message.content.raw_text or "",
         "media": json.dumps(media),
         "dt": dt,
@@ -63,6 +67,7 @@ def map_redis_data_to_message_entity(data: MessageRedisData) -> Message:
         id=data["id"],
         chat_id=data["cid"],
         sender_id=data["sid"],
+        sequence=data.get("seq", 0),
         content=MessageContent(
             text=text_vo,
             media=media_vo,

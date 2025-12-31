@@ -1,5 +1,4 @@
 import json
-from datetime import datetime
 from typing import Final
 
 from anonchat.infrastructure.repositories.base.redis import RedisRepo
@@ -15,8 +14,18 @@ class RedisMessageRepo(RedisRepo, IMessageRepo):
     DEFAULT_TTL: int | None = TTL
 
     async def add(self, message: Message) -> Message:
-        msg_id: int = await self.redis.incr(key_gen.MESSAGE_SEQ)
+        timeline_key = key_gen.chat_messages_timeline(message.chat_id)
+        
+        async with self.redis.pipeline() as pipe:
+            pipe.incr(key_gen.MESSAGE_SEQ)
+            pipe.llen(timeline_key)
+            results = await pipe.execute()
+            
+            msg_id: int = results[0]
+            sequence: int = results[1]
+        
         message.id = msg_id
+        message.sequence = sequence
                 
         data, stream_data = mapping.map_message_entity_to_redis_data(message)
 
@@ -24,15 +33,14 @@ class RedisMessageRepo(RedisRepo, IMessageRepo):
         raw = json.dumps(stream_data)
         
         msg_key = key_gen.message_data(msg_id)
-        timeline_key = key_gen.chat_messages_timeline(message.chat_id)
 
         async with self.redis.pipeline() as pipe:
             pipe.set(msg_key, raw_json, ex=self._ttl)
             
             pipe.rpush(timeline_key, msg_id)
-            pipe.expire(timeline_key, self._ttl)
+            
+            pipe.execute_command('EXPIRE', timeline_key, self._ttl, 'NX')
 
-            stream_data = {k: v for k, v in stream_data.items() if v}
             pipe.xadd(key_gen.get_message_stream(message.id), {"type": "SAVE", "raw": raw})
             
             await pipe.execute()
@@ -60,7 +68,10 @@ class RedisMessageRepo(RedisRepo, IMessageRepo):
             
             pipe.lrem(timeline_key, 0, message_id)
 
-            pipe.xadd(key_gen.get_message_stream(message_id), {"type": "DELETE", "id": str(message_id)})
+            pipe.xadd(
+                key_gen.get_message_stream(message_id), 
+                {"type": "DELETE", "id": str(message_id)}
+            )
             
             await pipe.execute()
 
@@ -83,6 +94,8 @@ class RedisMessageRepo(RedisRepo, IMessageRepo):
             if raw:
                 data = json.loads(raw)
                 result.append(mapping.map_redis_data_to_message_entity(data))
+        
+        result.sort(key=lambda m: m.sequence)
         
         return result
 

@@ -17,15 +17,16 @@ class RedisChatRepo(RedisRepo, IChatRepo):
 
     async def add(self, chat: PrivateChat) -> PrivateChat:
 
-        chat_id = await self.redis.incr(key_gen.CHAT_SEQ)
-        chat.id = chat_id
-        stream_key = key_gen.get_chat_stream(chat.id)
-     
-        data = mapping.map_chat_entity_to_redis_data(chat)
-        
-        raw = json.dumps(data)
-
         async with self.redis.pipeline() as pipe:
+
+            chat_id = await pipe.incr(key_gen.CHAT_SEQ)
+            chat.id = chat_id
+            stream_key = key_gen.get_chat_stream(chat.id)
+        
+            data = mapping.map_chat_entity_to_redis_data(chat)
+            
+            raw = json.dumps(data)
+
             pipe.set(key_gen.chat_meta(chat_id), raw)
             
             pipe.set(key_gen.user_active_chat(chat.user1_id), chat_id, ex=self._ttl)
@@ -68,8 +69,8 @@ class RedisChatRepo(RedisRepo, IChatRepo):
             pipe.delete(key_gen.user_active_chat(chat.user1_id))
             pipe.delete(key_gen.user_active_chat(chat.user2_id))
             
-            pipe.expire(key_gen.chat_meta(chat_id), 3600)
-            pipe.expire(key_gen.chat_messages_list(chat_id), 3600)
+            pipe.expire(key_gen.chat_meta(chat_id))
+            pipe.expire(key_gen.chat_messages_list(chat_id))
 
             event = {
                 "type": "CLOSE", 
